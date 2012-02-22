@@ -5,3 +5,6 @@ C:\Users\jnielsen\AppData\Local\Temporary Projects\Metadata_Comparer\obj\x86\Deb
 C:\Users\jnielsen\AppData\Local\Temporary Projects\Metadata_Comparer\obj\x86\Debug\Metadata_Comparer.pdb
 C:\Users\slu\Desktop\MetaData_Project\Metadata_Comparer\Metadata_Comparer\obj\x86\Debug\Metadata_Comparer.exe
 C:\Users\slu\Desktop\MetaData_Project\Metadata_Comparer\Metadata_Comparer\obj\x86\Debug\Metadata_Comparer.pdb
+C:\Users\slu\Desktop\MetaData_Project\Metadata_Comparer\Metadata_Comparer\bin\Debug\Metadata_Comparer.exe
+C:\Users\slu\Desktop\MetaData_Project\Metadata_Comparer\Metadata_Comparer\bin\Debug\Metadata_Comparer.pdb
+C:\Users\slu\Desktop\MetaData_Project\Metadata_Comparer\Metadata_Comparer\obj\x86\Debug\ResolveAssemblyReference.cache

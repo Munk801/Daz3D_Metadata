@@ -14,14 +14,18 @@ namespace MetaData_Verifier
     {
         static void Main(string[] args)
         {
-            StoreInfoVerifier(args[0]);
+            FileInfo file = new FileInfo(args[0]);
+            XElement test = XElement.Load(file.FullName);
+            XElement products = test.Element("Product");
+            StoreInfoVerifier(test);
+
         }
 
         static XElement LoadMetaData(FileInfo data)
         {
 
             // Element will get overwritten
-            XElement metadata = new XElement(data.FullName);
+            XElement metadata = XElement.Load(data.FullName) ;
             if (!isMetaData(data))
             {
                 FileInfo newData = new FileInfo(Console.ReadLine());
@@ -36,6 +40,12 @@ namespace MetaData_Verifier
 
         }
 
+        /// <summary>
+        /// Returns true if the file exists and is a metadata file.  Only checks file extension and not actual data.
+        /// It is up to the verifier to check certain pieces of info inside for consistency.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         static bool isMetaData(FileInfo data)
         {
             if (!data.Exists || data.Extension != ".dsx")
@@ -46,18 +56,66 @@ namespace MetaData_Verifier
             return true;
         }
 
+        /// <summary>
+        /// Checks Product, StoreID, GlobalID, ProductToken, and Artists to ensure that they all have values.  If they dont,
+        /// it will inform the user that a value is missing.
+        /// </summary>
+        /// <param name="metadata"></param>
         static void StoreInfoVerifier(XElement metadata)
         {
-            // Check Product Value
+            StringBuilder errorString = new StringBuilder();
+            string[] storeInfo = new string[] { "Product", "StoreID", "GlobalID", "ProductToken", "Artists" };
+            XElement products = metadata.Element("Products");
+            XElement[] itemsToCheck = new XElement[5];
+            if (products.Element("Product") == null)
+            {
+                errorString.AppendLine("No Product Found");
+            }
+            itemsToCheck[0] = products.Element("Product");
+            for (int i = 1; i < itemsToCheck.Length; i++)
+            {
+                if (itemsToCheck[0].Element(storeInfo[i]) == null)
+                {
+                    errorString.AppendLine(storeInfo[i] + " is not found in Metadata.");
+                    continue;
+                }
+                else
+                {
+                    itemsToCheck[i] = itemsToCheck[0].Element(storeInfo[i]);
+                }
+            }
 
-            // Check StoreID
+            foreach (XElement item in itemsToCheck)
+            {
 
-            // Check GlobalID
- 
-            // 
+                if (item == null) continue;
+                // ARTISTS ARE THE ONLY THING THAT CAN HAVE MORE THAN ONE ELEMENT
+                if (item.Name == "Artists")
+                {
+                    foreach (XElement artist in item.Elements())
+                    {
+                        if (artist.FirstAttribute.Value == null)
+                        {
+                            errorString.AppendLine(item.Name + " does not contain a value");
+                        }
+                    }
+                }
 
-
+                // ALL OTHER ELEMENTS
+                else if (item.FirstAttribute.Value == "")
+                {
+                    errorString.AppendLine(item.Name + " does not contain a value");
+                }
+            }
             
+            if (errorString.Length == 0)
+            {
+                MessageBox.Show("ALL IS WELL WITH STORE INFO");
+            }
+            else
+            {
+                MessageBox.Show(errorString.ToString());
+            }
         }
     }
 }
