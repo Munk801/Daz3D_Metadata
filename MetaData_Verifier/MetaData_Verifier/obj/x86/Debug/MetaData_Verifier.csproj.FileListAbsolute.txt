@@ -1,0 +1,5 @@
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\bin\Debug\MetaData_Verifier.exe
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\bin\Debug\MetaData_Verifier.pdb
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Debug\MetaData_Verifier.exe
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Debug\MetaData_Verifier.pdb
