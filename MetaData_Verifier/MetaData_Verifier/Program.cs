@@ -15,17 +15,24 @@ namespace MetaData_Verifier
         static void Main(string[] args)
         {
             FileInfo file = new FileInfo(args[0]);
-            XElement test = XElement.Load(file.FullName);
-            XElement products = test.Element("Product");
-            StoreInfoVerifier(test);
+            XElement metadata = LoadMetaData(file);
+            List<string> assetValues = GetAllAssetValuesFromMetaData(metadata);
+            StoreInfoVerifier(metadata);
 
         }
 
+
+        /// <summary>
+        /// LoadMetaData will load the xml from file and parse through some unnecessary items to reach the elements.
+        /// The return value will have already checked the product name and the root node will be down at Product.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         static XElement LoadMetaData(FileInfo data)
         {
 
             // Element will get overwritten
-            XElement metadata = XElement.Load(data.FullName) ;
+            XElement xmldoc = XElement.Load(data.FullName) ;
             if (!isMetaData(data))
             {
                 FileInfo newData = new FileInfo(Console.ReadLine());
@@ -33,9 +40,16 @@ namespace MetaData_Verifier
             }
             else
             {
-                metadata = XElement.Load(data.FullName);
+                xmldoc = XElement.Load(data.FullName);
             }
+            XElement products = xmldoc.Element("Products");
+            
 
+            if (products.Element("Product") == null)
+            {
+                MessageBox.Show("No Product Found");
+            }
+            XElement metadata = products.Element("Product");
             return metadata;
 
         }
@@ -63,28 +77,28 @@ namespace MetaData_Verifier
         /// <param name="metadata"></param>
         static void StoreInfoVerifier(XElement metadata)
         {
+            // Prints out at the end with results
             StringBuilder errorString = new StringBuilder();
-            string[] storeInfo = new string[] { "Product", "StoreID", "GlobalID", "ProductToken", "Artists" };
-            XElement products = metadata.Element("Products");
-            XElement[] itemsToCheck = new XElement[5];
-            if (products.Element("Product") == null)
+
+            // All the info to check
+            string[] storeInfo = new string[] {"StoreID", "GlobalID", "ProductToken", "Artists" };
+            XElement[] itemsToCheck = new XElement[4];
+
+            // Check all elements and see if it is there. If not, add to the error message that its not there
+            for (int i = 0; i < itemsToCheck.Length; i++)
             {
-                errorString.AppendLine("No Product Found");
-            }
-            itemsToCheck[0] = products.Element("Product");
-            for (int i = 1; i < itemsToCheck.Length; i++)
-            {
-                if (itemsToCheck[0].Element(storeInfo[i]) == null)
+                if (metadata.Element(storeInfo[i]) == null)
                 {
                     errorString.AppendLine(storeInfo[i] + " is not found in Metadata.");
                     continue;
                 }
                 else
                 {
-                    itemsToCheck[i] = itemsToCheck[0].Element(storeInfo[i]);
+                    itemsToCheck[i] = metadata.Element(storeInfo[i]);
                 }
             }
 
+            // Now that we know the elements are there, check to see if they have values.
             foreach (XElement item in itemsToCheck)
             {
 
@@ -108,6 +122,7 @@ namespace MetaData_Verifier
                 }
             }
             
+            // Nothing in error, GREAT!  We are good.  Message box may need to change to something else for usability.
             if (errorString.Length == 0)
             {
                 MessageBox.Show("ALL IS WELL WITH STORE INFO");
@@ -116,6 +131,34 @@ namespace MetaData_Verifier
             {
                 MessageBox.Show(errorString.ToString());
             }
+        }
+
+        /// <summary>
+        /// Grabs all the asset values *IE the file location* and stores them in a string list.  The input assumes that you 
+        /// have used the LoadMetaData() method to parse through some of the data.  This list can be used to check with the actual directories to make sure
+        /// they have all the files.
+        /// </summary>
+        /// <param name="metadata"></param>
+        /// <returns></returns>
+        static List<string> GetAllAssetValuesFromMetaData(XElement metadata)
+        {
+            XElement assets = metadata.Element("Assets");
+            List<XElement> allAssets = assets.Elements("Asset").ToList<XElement>();
+            List<string> assetValues = new List<string>();
+            foreach (XElement asset in allAssets)
+            {
+                if (asset.FirstAttribute.Value == "")
+                {
+                    Console.WriteLine("No value assigned to asset");
+                }
+
+                else
+                {
+                    assetValues.Add(asset.FirstAttribute.Value);
+                }
+            }
+
+            return assetValues;
         }
     }
 }
