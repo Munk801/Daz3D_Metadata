@@ -22,7 +22,5 @@ namespace MetaData_Verifier
             Form1 form = new Form1();
             Application.Run(form);
         }
-
-
     }
 }

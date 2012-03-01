@@ -46,6 +46,7 @@ namespace MetaData_Verifier
 
             string diff = "\\Content\\Runtime\\Support\\" + Path.GetFileName(myFiles[0]);
             string manifestPath = Path.GetFullPath(myFiles[0]).Replace(diff, "\\manifest.dsx");
+            //  TO DO: ADD A TRY CATCH
             XElement manifest = XElement.Load(manifestPath);
 
             FileInfo file = new FileInfo(myFiles[0]);
@@ -61,8 +62,8 @@ namespace MetaData_Verifier
 
             // Load the schema from embedded resources.  This will check with the current metadata file
             XmlSchemaSet schema = new XmlSchemaSet();
-            schema.Add("", System.Xml.XmlReader.Create("ContentMetadata.xsd"));
-
+            //schema.Add("", System.Xml.XmlReader.Create("ContentMetadata.xsd"));
+            schema.Add("", "ContentMetadata.xsd");
 
             // Validate the document with the schema
             errorReport.AppendLine("\n SCHEMA COMPARISON VERIFICATION: ");
@@ -168,9 +169,6 @@ namespace MetaData_Verifier
         /// <param name="metadata"></param>
         static void StoreInfoVerifier(XElement metadata, StringBuilder errorReport)
         {
-            // Prints out at the end with results
-            StringBuilder errorString = new StringBuilder();
-
             // All the info to check
             string[] storeInfo = new string[] { "StoreID", "GlobalID", "ProductToken", "Artists" };
             XElement[] itemsToCheck = new XElement[4];
@@ -180,7 +178,7 @@ namespace MetaData_Verifier
             {
                 if (metadata.Element(storeInfo[i]) == null)
                 {
-                    errorString.AppendLine(storeInfo[i] + " is not found in Metadata.");
+                    errorReport.AppendLine(storeInfo[i] + " is not found in Metadata.");
                     continue;
                 }
                 else
@@ -201,7 +199,7 @@ namespace MetaData_Verifier
                     {
                         if (artist.FirstAttribute.Value == null)
                         {
-                            errorString.AppendLine(item.Name + " does not contain a value");
+                            errorReport.AppendLine(item.Name + " does not contain a value");
                         }
                     }
                 }
@@ -209,18 +207,14 @@ namespace MetaData_Verifier
                 // ALL OTHER ELEMENTS
                 else if (item.FirstAttribute.Value == "")
                 {
-                    errorString.AppendLine(item.Name + " does not contain a value");
+                    errorReport.AppendLine(item.Name + " does not contain a value");
                 }
             }
 
             // Nothing in error, GREAT!  We are good.  Message box may need to change to something else for usability.
-            if (errorString.Length == 0)
+            if (errorReport.Length == 0)
             {
-                MessageBox.Show("ALL IS WELL WITH STORE INFO");
-            }
-            else
-            {
-                MessageBox.Show(errorString.ToString());
+                errorReport.AppendLine("ALL IS WELL WITH STORE INFO");
             }
         }
 
