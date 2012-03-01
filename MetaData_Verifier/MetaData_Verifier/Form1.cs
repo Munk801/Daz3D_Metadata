@@ -51,6 +51,8 @@ namespace MetaData_Verifier
 
             FileInfo file = new FileInfo(myFiles[0]);
             XElement metadata = LoadMetaData(file);
+
+            // TO DO: ADD A TRY CATCH
             XDocument md = XDocument.Load(myFiles[0]);
 
             // Add the product information to error report
