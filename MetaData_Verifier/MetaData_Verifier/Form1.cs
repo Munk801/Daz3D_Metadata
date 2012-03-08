@@ -8,7 +8,6 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Linq.Expressions;
-using System.Linq;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml;
@@ -18,7 +17,9 @@ namespace MetaData_Verifier
     public partial class Form1 : Form
     {
 
-        public string[] myFiles;
+        public List<FileInfo> myFiles;
+        public string[] paths;
+        public XDocument mdFile;
 
         public Form1()
         {
@@ -38,56 +39,166 @@ namespace MetaData_Verifier
 
         private void Form1_DragDrop(object sender, DragEventArgs e)
         {
-            myFiles = e.Data.GetData(DataFormats.FileDrop) as string[];
+            
+            // Contains all the files of metadata to process
+            myFiles = new List<FileInfo>();
+
+            // Grab all the files into a string array
+            paths = e.Data.GetData(DataFormats.FileDrop) as string[];
+
+            // We must check to make sure they are metadata files and that they exist
+            foreach (string path in paths)
+            {
+                try
+                {
+                    FileInfo f = new FileInfo(Path.GetFullPath(path));
+                    if (f.Extension != ".dsx")
+                    {
+                        MessageBox.Show(f.Name + " is not a Metadata file.  It must be a .dsx file.");
+                    }
+                    else
+                    {
+                        myFiles.Add(f);
+                    }
+                }
+                catch (FileNotFoundException f)
+                {
+                    MessageBox.Show(f.ToString() + " does not exist.  Error Code: " + f.Message);
+                }
+            }
+
+            foreach (FileInfo filePath in myFiles)
+            {
+                // Build error string to print to txt or message box or whatever
+                StringBuilder errorReport = new StringBuilder();
+                XElement metadata = LoadMetaData(filePath);
+                // Add the product information to error report
+                errorReport.AppendLine("ERROR REPORT FOR: " + metadata.FirstAttribute.Value.ToString());
+                string filename = filePath.FullName;
+
+                // Get parent dir path.  We will need it later
+                // TO DO: CHECK ALL SUB PATHS FOR SUPPORT ASSETS****
+                DirectoryInfo getPD = new DirectoryInfo(Path.GetDirectoryName(filename));
+                string parentDirPath = GetParentDir(getPD);
+                DirectoryInfo parentDir = new DirectoryInfo(parentDirPath);
+                DirectoryInfo[] subdirs = parentDir.GetDirectories();
+
+                DirectoryInfo dir = new DirectoryInfo(Path.GetDirectoryName(filename));
+
+                CheckManifestAndMetaData(dir, metadata, errorReport);
+
+                // Load the schema from embedded resources.  This will check with the current metadata file
+                XmlSchemaSet schema = new XmlSchemaSet();
+                schema.Add("", "ContentMetadata.xsd");
+
+                // Validate the document with the schema
+                mdFile = XDocument.Load(filePath.FullName);
+                errorReport.AppendLine("\n SCHEMA COMPARISON VERIFICATION: ");
+                mdFile.Validate(schema, (o, g) =>
+                {
+                    errorReport.AppendLine(g.Message);
+                });
+
+                // Verify Information from the store
+                errorReport.AppendLine("\n STORE INFORMATION VERIFICATION: ");
+                StoreInfoVerifier(metadata, mdFile, filePath, errorReport);
 
 
-            // Build error string to print to txt or message box or whatever
-            StringBuilder errorReport = new StringBuilder();
+                // Verify values from assets
+                errorReport.AppendLine("\n ASSET VALUES VERIFICATION: ");
+                // TO DO: VERIFY ALL THE ASSETS IN METADATA ARE IN FILE
+                List<string> assetValues = GetAllAssetValuesFromMetaData(metadata, mdFile, errorReport);
 
-            string diff = "\\Content\\Runtime\\Support\\" + Path.GetFileName(myFiles[0]);
-            string manifestPath = Path.GetFullPath(myFiles[0]).Replace(diff, "\\manifest.dsx");
-            //  TO DO: ADD A TRY CATCH
-            XElement manifest = XElement.Load(manifestPath);
+                // Some way of indicating user of the results
+                MessageBox.Show(errorReport.ToString());
+            }
+        }
 
-            FileInfo file = new FileInfo(myFiles[0]);
-            XElement metadata = LoadMetaData(file);
+        static void CheckManifestAndMetaData(DirectoryInfo dir, XElement metadata, StringBuilder errorReport)
+        {
+            DirectoryInfo root = dir.Root;
+            FileInfo[] manifest = dir.GetFiles("manifest.dsx");
+            // Continually go up til we find the manifest.  The first manifest is our guy!
+            while (dir != root)
+            {
+                manifest = dir.GetFiles("manifest.dsx");
+                if (manifest.Length == 1)
+                {
+                    break;
+                }
+                dir = dir.Parent;
+            }
+            if (manifest.Length != 1)
+            {
+                MessageBox.Show("Manifest could not be found");
+                return;
+            }
 
-            // TO DO: ADD A TRY CATCH
-            XDocument md = XDocument.Load(myFiles[0]);
-
-            // Add the product information to error report
-            errorReport.AppendLine("ERROR REPORT FOR: " + metadata.FirstAttribute.Value.ToString());
+            // Files in which we are checking the GID for
+            XElement manifestFile = XElement.Load(manifest[0].FullName);
+            // These files will write out the GID.  We may not need both but this works.
+            XDocument manTest = XDocument.Load(manifest[0].FullName);
+            XElement gidToWrite = manTest.Root.Element("GlobalID");
 
             // Global IDs must be the same
             errorReport.AppendLine("\n GLOBAL ID VERIFICATION: ");
-            if (!IsSameGlobalID(metadata, manifest)) errorReport.AppendLine("Manifest GlobalID not the same with Metadata GlobalID");
+            //if (!IsSameGlobalID(metadata, manifestFile)) errorReport.AppendLine("Manifest GlobalID not the same with Metadata GlobalID");
 
-            // Load the schema from embedded resources.  This will check with the current metadata file
-            XmlSchemaSet schema = new XmlSchemaSet();
-            //schema.Add("", System.Xml.XmlReader.Create("ContentMetadata.xsd"));
-            schema.Add("", "ContentMetadata.xsd");
-
-            // Validate the document with the schema
-            errorReport.AppendLine("\n SCHEMA COMPARISON VERIFICATION: ");
-            md.Validate(schema, (o, g) =>
+            // Write this back to the XML.  XML Header gets added.  Issue?
+            string gid = ChangeGlobalID(metadata, ref manifestFile);
+            if (gidToWrite.FirstAttribute.Value != gid)
             {
-                errorReport.AppendLine(g.Message);
-            });
-
-            // Verify Information from the store
-            errorReport.AppendLine("\n STORE INFORMATION VERIFICATION: ");
-            StoreInfoVerifier(metadata, errorReport);
-
-
-            // Verify values from assets
-            errorReport.AppendLine("\n ASSET VALUES VERIFICATION: ");
-            List<string> assetValues = GetAllAssetValuesFromMetaData(metadata, errorReport);
-
-            // Some way of indicating user of the results
-            MessageBox.Show(errorReport.ToString());
-
+                gidToWrite.FirstAttribute.Value = gid;
+                manTest.Save(manifest[0].FullName, SaveOptions.OmitDuplicateNamespaces);
+                errorReport.AppendLine("Different Global IDs.  Resaved metadata global ID");
+            }
         }
 
+        /// <summary>
+        /// Checks the Global ID values of the metadata and the manifest xml files.  If they are different, return false
+        /// </summary>
+        /// <param name="metadata"> XElement should be retrieved from LoadMetaData function</param>
+        /// <param name="manifest"> Manifest is loaded from initial start</param>
+        /// <returns></returns>
+        static bool IsSameGlobalID(XElement metadata, XElement manifest)
+        {
+            XElement mdGID = metadata.Element("GlobalID");
+            XElement manifestGID = manifest.Element("GlobalID");
+
+            if (mdGID.FirstAttribute.Value == manifestGID.FirstAttribute.Value)
+                return true;
+
+            else return false;
+        }
+
+        static string ChangeGlobalID(XElement metadata, ref XElement manifest)
+        {
+
+            // TO DO: CHANGE MANIFEST GID TO METADATA GID
+            XElement mdGID = metadata.Element("GlobalID");
+            XElement manifestGID = manifest.Element("GlobalID");
+
+            //manifestGID.FirstAttribute.Value = mdGID.FirstAttribute.Value;
+            manifest.SetAttributeValue("GlobalID", mdGID.FirstAttribute.Value);
+            return mdGID.FirstAttribute.Value;
+        }
+
+        /// <summary>
+        /// Because we are under the assumption that Content is going to be the Base, this will grab that directory
+        /// </summary>
+        /// <param name="dir"></param>
+        /// <returns></returns>
+        static string GetParentDir(DirectoryInfo dir)
+        {
+            DirectoryInfo d = dir;
+            while (d != d.Root)
+            {
+                if (d.Name == "Content") return d.FullName;
+
+                d = d.Parent;
+            }
+            return null;
+        }
 
         /// <summary>
         /// LoadMetaData will load the xml from file and parse through some unnecessary items to reach the elements.
@@ -102,26 +213,30 @@ namespace MetaData_Verifier
             try
             {
                 XElement xmldoc = XElement.Load(data.FullName);
-
+                XElement metadata;
 
                 if (!isMetaData(data))
                 {
-                    FileInfo newData = new FileInfo(Console.ReadLine());
-                    LoadMetaData(newData);
+                    MessageBox.Show("Not a metadata file.  Only works on .dsx metadata files.");
+                    return null;
                 }
                 else
                 {
                     xmldoc = XElement.Load(data.FullName);
-                }
-                XElement products = xmldoc.Element("Products");
 
+                    if (xmldoc.Name != "ContentDBInstall")
+                    {
+                        MessageBox.Show("File is a .DSX file but is not a compatible metadata file.  Please use a compatible metadata file.");
+                        return null;
+                    }
 
-                if (products.Element("Product") == null)
-                {
-                    MessageBox.Show("No Product Found");
+                    else
+                    {
+                        XElement products = xmldoc.Element("Products");
+                        metadata = products.Element("Product");
+                    }
+                    return metadata;
                 }
-                XElement metadata = products.Element("Product");
-                return metadata;
             }
             catch (XmlException e)
             {
@@ -147,29 +262,14 @@ namespace MetaData_Verifier
             return true;
         }
 
-        /// <summary>
-        /// Checks the Global ID values of the metadata and the manifest xml files.  If they are different, return false
-        /// </summary>
-        /// <param name="metadata"> XElement should be retrieved from LoadMetaData function</param>
-        /// <param name="manifest"> Manifest is loaded from initial start</param>
-        /// <returns></returns>
-        static bool IsSameGlobalID(XElement metadata, XElement manifest)
-        {
-            XElement mdGID = metadata.Element("GlobalID");
-            XElement manifestGID = manifest.Element("GlobalID");
 
-            if (mdGID.FirstAttribute.Value == manifestGID.FirstAttribute.Value)
-                return true;
-
-            else return false;
-        }
 
         /// <summary>
         /// Checks Product, StoreID, GlobalID, ProductToken, and Artists to ensure that they all have values.  If they dont,
         /// it will inform the user that a value is missing.
         /// </summary>
         /// <param name="metadata"></param>
-        static void StoreInfoVerifier(XElement metadata, StringBuilder errorReport)
+        static void StoreInfoVerifier(XElement metadata, XDocument md, FileInfo filePath, StringBuilder errorReport)
         {
             // All the info to check
             string[] storeInfo = new string[] { "StoreID", "GlobalID", "ProductToken", "Artists" };
@@ -197,13 +297,19 @@ namespace MetaData_Verifier
                 // ARTISTS ARE THE ONLY THING THAT CAN HAVE MORE THAN ONE ELEMENT
                 if (item.Name == "Artists")
                 {
+                    
                     foreach (XElement artist in item.Elements())
                     {
-                        if (artist.FirstAttribute.Value == null)
+                        
+                        if (artist.FirstAttribute.Value == "")
                         {
-                            errorReport.AppendLine(item.Name + " does not contain a value");
+                            errorReport.AppendLine(item.Name + " has an empty Artist.  Removing from metadata...");
+                            artist.Remove();
+                            md.Save(filePath.FullName);
                         }
                     }
+                    if (!item.HasElements)
+                        errorReport.AppendLine(item.Name + " does not contain a value");
                 }
 
                 // ALL OTHER ELEMENTS
@@ -211,12 +317,6 @@ namespace MetaData_Verifier
                 {
                     errorReport.AppendLine(item.Name + " does not contain a value");
                 }
-            }
-
-            // Nothing in error, GREAT!  We are good.  Message box may need to change to something else for usability.
-            if (errorReport.Length == 0)
-            {
-                errorReport.AppendLine("ALL IS WELL WITH STORE INFO");
             }
         }
 
@@ -227,7 +327,7 @@ namespace MetaData_Verifier
         /// </summary>
         /// <param name="metadata"></param>
         /// <returns></returns>
-        static List<string> GetAllAssetValuesFromMetaData(XElement metadata, StringBuilder errorReport)
+        static List<string> GetAllAssetValuesFromMetaData(XElement metadata, XDocument md, StringBuilder errorReport)
         {
             XElement assets = metadata.Element("Assets");
             List<XElement> allAssets = assets.Elements("Asset").ToList<XElement>();
@@ -236,12 +336,12 @@ namespace MetaData_Verifier
             {
                 if (asset.FirstAttribute.Value == "")
                 {
-                    Console.WriteLine("No value assigned to asset");
+                    errorReport.AppendLine("No value assigned to asset.");
                 }
 
                 else
                 {
-                    CheckValuesofAssets(asset, errorReport);
+                    CheckValuesofAssets(asset, md, errorReport);
                     assetValues.Add(asset.FirstAttribute.Value);
                 }
             }
@@ -255,14 +355,17 @@ namespace MetaData_Verifier
         /// compatability, tag, audience, content type, categories, and compatability bases.  Categories, Tags, and Compatabilities all have sub elements
         /// </summary>
         /// <param name="asset"></param>
-        static void CheckValuesofAssets(XElement asset, StringBuilder errorReport)
+        static void CheckValuesofAssets(XElement asset, XDocument md, StringBuilder errorReport)
         {
+            
+            // FIX: WHEN REMOVING THE ENTIRE ELEMENT, DOESNT REPORT ERROR
             // Check to make sure we have all these for every asset
-            if (asset.Elements("ContentType") == null) errorReport.AppendLine(asset.ToString() + " is missing a ContentType");
-            if (asset.Elements("Audience") == null) errorReport.AppendLine(asset.ToString() + " is missing an Audience");
-            if (asset.Elements("Tags") == null) errorReport.AppendLine(asset.ToString() + " is missing a Tag");
-            if (asset.Elements("Categories") == null) errorReport.AppendLine(asset.ToString() + " is missing a Category");
-            if (asset.Elements("Compatabilities") == null) errorReport.AppendLine(asset.ToString() + " is missing a Compatability");
+            var results = asset.Descendants().ToList<XElement>();
+
+            if (results[0].Name != "ContentType") errorReport.AppendLine(asset.FirstAttribute.Value.ToString() + " is missing a ContentType");
+            else if (results[1].Name != "Audience") errorReport.AppendLine(asset.FirstAttribute.Value.ToString() + " is missing an Audience");
+            else if (results[2].Name != "Tags") errorReport.AppendLine(asset.FirstAttribute.Value.ToString() + " is missing Tags");
+
 
             foreach (XElement node in asset.Nodes())
             {

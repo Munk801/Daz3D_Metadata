@@ -79,22 +79,26 @@
                                     </xs:sequence>
                                   </xs:complexType>
                                 </xs:element>
-                                <xs:element minOccurs="0" maxOccurs="1" name="CompatibilityBase">
-                                  <xs:complexType>
-                                    <xs:attribute name="VALUE" type="xs:string" use="required" />
-                                  </xs:complexType>
-                                </xs:element>
-                                <xs:element minOccurs="0" maxOccurs="1" name="Compatibilities">
-                                  <xs:complexType>
-                                    <xs:sequence>
-                                      <xs:element minOccurs="0" maxOccurs="unbounded" name="Compatibility">
-                                        <xs:complexType>
-                                          <xs:attribute name="VALUE" type="xs:string" use="required" />
-                                        </xs:complexType>
-                                      </xs:element>
-                                    </xs:sequence>
-                                  </xs:complexType>
-                                </xs:element>
+                                <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                                  <xs:choice>
+                                    <xs:element minOccurs="0" maxOccurs="unbounded" name="CompatibilityBase">
+                                      <xs:complexType>
+                                        <xs:attribute name="VALUE" type="xs:string" use="required" />
+                                      </xs:complexType>
+                                    </xs:element>
+                                    <xs:element minOccurs="0" maxOccurs="unbounded" name="Compatibilities">
+                                      <xs:complexType>
+                                        <xs:sequence>
+                                          <xs:element minOccurs="0" maxOccurs="unbounded" name="Compatibility">
+                                            <xs:complexType>
+                                              <xs:attribute name="VALUE" type="xs:string" use="required" />
+                                            </xs:complexType>
+                                          </xs:element>
+                                        </xs:sequence>
+                                      </xs:complexType>
+                                    </xs:element>
+                                  </xs:choice>
+                                </xs:sequence>
                                 <xs:element minOccurs="0" maxOccurs="1" name="Description" type="xs:string" />
                                 <xs:element minOccurs="0" maxOccurs="1" name="Userwords">
                                   <xs:complexType>
