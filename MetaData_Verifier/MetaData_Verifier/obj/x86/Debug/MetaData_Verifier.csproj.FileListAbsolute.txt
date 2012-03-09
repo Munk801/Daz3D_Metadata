@@ -1,9 +1,0 @@
-C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\bin\Debug\MetaData_Verifier.exe
-C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\bin\Debug\MetaData_Verifier.pdb
-C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Debug\ResolveAssemblyReference.cache
-C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Debug\MetaData_Verifier.exe
-C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Debug\MetaData_Verifier.pdb
-C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\bin\Debug\ContentMetadata.xsd
-C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Debug\MetaData_Verifier.Form1.resources
-C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Debug\GenerateResource.read.1.tlog
-C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Debug\GenerateResource.write.1.tlog

@@ -11,12 +11,12 @@ using System.Linq.Expressions;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml;
+using System.Reflection;
 
 namespace MetaData_Verifier
 {
     public partial class Form1 : Form
     {
-
         public List<FileInfo> myFiles;
         public string[] paths;
         public XDocument mdFile;
@@ -58,6 +58,7 @@ namespace MetaData_Verifier
                     if (f.Extension != ".dsx")
                     {
                         MessageBox.Show(f.Name + " is not a Metadata file.  It must be a .dsx file.");
+                        return;
                     }
                     else
                     {
@@ -73,50 +74,55 @@ namespace MetaData_Verifier
             foreach (FileInfo filePath in myFiles)
             {
                 // Build error string to print to txt or message box or whatever
-                StringBuilder errorReport = new StringBuilder();
                 XElement metadata = LoadMetaData(filePath);
-                // Add the product information to error report
-                errorReport.AppendLine("ERROR REPORT FOR: " + metadata.FirstAttribute.Value.ToString());
-                mdPath = filePath.FullName;
-
-                // Get parent dir path.  We will need it later
-                // TO DO: CHECK ALL SUB PATHS FOR SUPPORT ASSETS****
-                DirectoryInfo getPD = new DirectoryInfo(Path.GetDirectoryName(mdPath));
-                parentDir = new DirectoryInfo(GetParentDir(getPD));
-                fileNames = GenerateFileList();
-                
-
-                DirectoryInfo dir = new DirectoryInfo(Path.GetDirectoryName(mdPath));
-
-                CheckManifestAndMetaData(dir, metadata, errorReport);
-
-                // Load the schema from embedded resources.  This will check with the current metadata file
-                XmlSchemaSet schema = new XmlSchemaSet();
-                schema.Add("", "ContentMetadata.xsd");
-
-                // Validate the document with the schema
-                mdFile = XDocument.Load(filePath.FullName);
-                errorReport.AppendLine("\n SCHEMA COMPARISON VERIFICATION: ");
-                mdFile.Validate(schema, (o, g) =>
+                if (metadata != null)
                 {
-                    errorReport.AppendLine(g.Message);
-                });
+                    // Add the product information to error report
+                    Error.Report("ERROR REPORT FOR: " + metadata.FirstAttribute.Value.ToString());
+                    mdPath = filePath.FullName;
 
-                CheckSupportAssets(metadata, errorReport);
+                    // Get parent dir path.  We will need it later
+                    // TO DO: CHECK ALL SUB PATHS FOR SUPPORT ASSETS****
+                    DirectoryInfo getPD = new DirectoryInfo(Path.GetDirectoryName(mdPath));
+                    parentDir = new DirectoryInfo(GetParentDir(getPD));
+                    fileNames = GenerateFileList();
 
 
-                // Verify Information from the store
-                errorReport.AppendLine("\n STORE INFORMATION VERIFICATION: ");
-                StoreInfoVerifier(metadata, mdFile, filePath, errorReport);
+                    DirectoryInfo dir = new DirectoryInfo(Path.GetDirectoryName(mdPath));
+
+                    CheckManifestAndMetaData(dir, metadata);
+
+                    // Load the schema from embedded resources.  This will check with the current metadata file
+                    XmlSchemaSet schema = new XmlSchemaSet();
+                    schema.Add("", "ContentMetadata.xsd");
+
+                    // Validate the document with the schema
+                    mdFile = XDocument.Load(filePath.FullName);
+                    Error.Report("\n SCHEMA COMPARISON VERIFICATION: ");
+                    mdFile.Validate(schema, (o, g) =>
+                    {
+                        Error.Report(g.Message);
+                    });
 
 
-                // Verify values from assets
-                errorReport.AppendLine("\n ASSET VALUES VERIFICATION: ");
-                // TO DO: VERIFY ALL THE ASSETS IN METADATA ARE IN FILE
-                List<string> assetValues = GetAllAssetValuesFromMetaData(metadata, mdFile, errorReport);
+                    List<string> assetValues = GetAllAssetValuesFromMetaData(metadata, mdFile);
 
-                // Some way of indicating user of the results
-                MessageBox.Show(errorReport.ToString());
+                    CheckSupportAssets(metadata);
+
+                    CheckAssetsInDirectory(assetValues);
+
+                    // Verify Information from the store
+                    Error.Report("\n STORE INFORMATION VERIFICATION: ");
+                    StoreInfoVerifier(metadata, mdFile, filePath);
+
+
+                    // Verify values from assets
+                    Error.Report("\n ASSET VALUES VERIFICATION: ");
+                    // TO DO: VERIFY ALL THE ASSETS IN METADATA ARE IN FILE
+
+
+                    Error.Print(errorReport);
+                }
             }
         }
 
@@ -135,7 +141,7 @@ namespace MetaData_Verifier
             while (directoryStack.Count != 0)
             {
                 DirectoryInfo dir = directoryStack.Pop();
-                if(dir.Name == ("Support")) continue;
+                if(dir.Name == "Support" || dir.Name == "Uninstallers") continue;
                 fileList.Add(dir.GetFiles());
                 directoryStack.Push(dir.GetDirectories());
             }
@@ -153,36 +159,43 @@ namespace MetaData_Verifier
             return outPutList;
         }
 
-
-
-        private void CheckSupportAssets(XElement metadata, StringBuilder errorReport)
+        private void CheckAssetsInDirectory(List<string> assets)
         {
-            errorReport.AppendLine("CHECKING SUPPORT ASSETS:");
+            Error.Report("\nCHECKING ALL ASSETS IN METADATA WITH DIRECTORY:");
+            foreach (string curAsset in assets)
+            {
+                if(!fileNames.Contains(curAsset.ToLower()))
+                    Error.Report(curAsset + " is not found in your directory.");
+            }
+        }
+
+        private void CheckSupportAssets(XElement metadata)
+        {
+            Error.Report("\nCHECKING SUPPORT ASSETS:");
             XElement supAssets = metadata.Element("SupportAssets");
             List<XElement> allSupAssets = supAssets.Elements("SupportAsset").ToList<XElement>();
-            List<string> supportAssets = new List<string>();
+            List<string> supportAssets = new List<string>(fileNames);
 
             // Checks all the support assets in the metadata against the directories
             foreach (XElement sa in allSupAssets)
             {
                 string s = sa.FirstAttribute.Value.ToLower();
-                if (!fileNames.Contains(s))
-                    errorReport.AppendLine(sa.FirstAttribute.Value + " is not found in the directory.");
-                else fileNames.Remove(s);
+                if (!supportAssets.Contains(s))
+                    Error.Report(sa.FirstAttribute.Value + " is not found in the directory.");
+                else supportAssets.Remove(s);
 
             }
 
             if(fileNames.Count != 0)
-                foreach (string name in fileNames)
+                foreach (string name in supportAssets)
                 {
                     XElement thisAsset = new XElement("SupportAsset", new XAttribute("VALUE", name));
-                    supAssets.SetElementValue(thisAsset.Name, thisAsset.Value);
-                    metadata.Save(mdPath, SaveOptions.OmitDuplicateNamespaces);
-                    errorReport.AppendLine(thisAsset + " is missing from the metadata.");
+                    //metadata.Save(mdPath, SaveOptions.OmitDuplicateNamespaces);
+                    Error.Report(name + " is missing from the metadata.");
                 }
         }
 
-        static void CheckManifestAndMetaData(DirectoryInfo dir, XElement metadata, StringBuilder errorReport)
+        static void CheckManifestAndMetaData(DirectoryInfo dir, XElement metadata)
         {
             DirectoryInfo root = dir.Root;
             FileInfo[] manifest = dir.GetFiles("manifest.dsx");
@@ -209,7 +222,7 @@ namespace MetaData_Verifier
             XElement gidToWrite = manTest.Root.Element("GlobalID");
 
             // Global IDs must be the same
-            errorReport.AppendLine("\n GLOBAL ID VERIFICATION: ");
+            Error.Report("\n GLOBAL ID VERIFICATION: ");
             //if (!IsSameGlobalID(metadata, manifestFile)) errorReport.AppendLine("Manifest GlobalID not the same with Metadata GlobalID");
 
             // Write this back to the XML.  XML Header gets added.  Issue?
@@ -218,7 +231,7 @@ namespace MetaData_Verifier
             {
                 gidToWrite.FirstAttribute.Value = gid;
                 manTest.Save(manifest[0].FullName, SaveOptions.OmitDuplicateNamespaces);
-                errorReport.AppendLine("Different Global IDs.  Resaved metadata global ID");
+                Error.Report("Different Global IDs.  Resaved metadata global ID");
             }
         }
 
@@ -337,7 +350,7 @@ namespace MetaData_Verifier
         /// it will inform the user that a value is missing.
         /// </summary>
         /// <param name="metadata"></param>
-        static void StoreInfoVerifier(XElement metadata, XDocument md, FileInfo filePath, StringBuilder errorReport)
+        static void StoreInfoVerifier(XElement metadata, XDocument md, FileInfo filePath)
         {
             // All the info to check
             string[] storeInfo = new string[] { "StoreID", "GlobalID", "ProductToken", "Artists" };
@@ -348,7 +361,7 @@ namespace MetaData_Verifier
             {
                 if (metadata.Element(storeInfo[i]) == null)
                 {
-                    errorReport.AppendLine(storeInfo[i] + " is not found in Metadata.");
+                    Error.Report(storeInfo[i] + " is not found in Metadata.");
                     continue;
                 }
                 else
@@ -371,19 +384,20 @@ namespace MetaData_Verifier
                         
                         if (artist.FirstAttribute.Value == "")
                         {
-                            errorReport.AppendLine(item.Name + " has an empty Artist.  Removing from metadata...");
+                            Error.Report(item.Name + " has an empty Artist.  Removing from metadata...");
                             artist.Remove();
+                            // Not properly removing artist anymore
                             md.Save(filePath.FullName);
                         }
                     }
                     if (!item.HasElements)
-                        errorReport.AppendLine(item.Name + " does not contain a value");
+                        Error.Report(item.Name + " does not contain a value");
                 }
 
                 // ALL OTHER ELEMENTS
                 else if (item.FirstAttribute.Value == "")
                 {
-                    errorReport.AppendLine(item.Name + " does not contain a value");
+                    Error.Report(item.Name + " does not contain a value");
                 }
             }
         }
@@ -395,7 +409,7 @@ namespace MetaData_Verifier
         /// </summary>
         /// <param name="metadata"></param>
         /// <returns></returns>
-        static List<string> GetAllAssetValuesFromMetaData(XElement metadata, XDocument md, StringBuilder errorReport)
+        static List<string> GetAllAssetValuesFromMetaData(XElement metadata, XDocument md)
         {
             XElement assets = metadata.Element("Assets");
             List<XElement> allAssets = assets.Elements("Asset").ToList<XElement>();
@@ -404,13 +418,13 @@ namespace MetaData_Verifier
             {
                 if (asset.FirstAttribute.Value == "")
                 {
-                    errorReport.AppendLine("No value assigned to asset.");
+                    Error.Report("No value assigned to asset.");
                 }
 
                 else
                 {
-                    CheckValuesofAssets(asset, md, errorReport);
-                    assetValues.Add(asset.FirstAttribute.Value);
+                    CheckValuesofAssets(asset, md);
+                    assetValues.Add("/" + asset.FirstAttribute.Value);
                 }
             }
 
@@ -423,16 +437,22 @@ namespace MetaData_Verifier
         /// compatability, tag, audience, content type, categories, and compatability bases.  Categories, Tags, and Compatabilities all have sub elements
         /// </summary>
         /// <param name="asset"></param>
-        static void CheckValuesofAssets(XElement asset, XDocument md, StringBuilder errorReport)
+        static void CheckValuesofAssets(XElement asset, XDocument md)
         {
             
             // FIX: WHEN REMOVING THE ENTIRE ELEMENT, DOESNT REPORT ERROR
             // Check to make sure we have all these for every asset
             var results = asset.Descendants().ToList<XElement>();
+            List<string> descNames = new List<string>();
+            foreach (XElement desc in results)
+            {
+                descNames.Add(desc.Name.ToString());
+            }
 
-            if (results[0].Name != "ContentType") errorReport.AppendLine(asset.FirstAttribute.Value.ToString() + " is missing a ContentType");
-            else if (results[1].Name != "Audience") errorReport.AppendLine(asset.FirstAttribute.Value.ToString() + " is missing an Audience");
-            else if (results[2].Name != "Tags") errorReport.AppendLine(asset.FirstAttribute.Value.ToString() + " is missing Tags");
+            if (!descNames.Contains("ContentType")) Error.Report(asset.FirstAttribute.Value.ToString() + " is missing a ContentType");
+            else if (!descNames.Contains("Audience")) Error.Report(asset.FirstAttribute.Value.ToString() + " is missing an Audience");
+            else if (!descNames.Contains("Categories")) Error.Report(asset.FirstAttribute.Value + "is missing Categories");
+            else if (!descNames.Contains("Tags")) Error.Report(asset.FirstAttribute.Value.ToString() + " is missing Tags");
 
 
             foreach (XElement node in asset.Nodes())
@@ -441,7 +461,7 @@ namespace MetaData_Verifier
                 {
                     // Check for value
                     if (node.FirstAttribute.Value == "")
-                        errorReport.AppendLine(node.Name + " does not contain a value");
+                        Error.Report(node.Name + " does not contain a value");
                 }
 
                 if (node.Name == "Categories" || node.Name == "Tags" || node.Name == "Compatabilities")
@@ -450,7 +470,7 @@ namespace MetaData_Verifier
                     // Maybe just check if it has all elements??
                     if (!node.HasElements)
                     {
-                        errorReport.AppendLine(node.ToString() + " contains no elements.  Should have at least one element.");
+                        Error.Report(node.ToString() + " contains no elements.  Should have at least one element.");
                         continue;
                     }
 
@@ -458,12 +478,17 @@ namespace MetaData_Verifier
                     {
                         if (!value.HasAttributes)
                         {
-                            errorReport.AppendLine(value.ToString() + " in " + node.ToString() + " does not contain a value.");
+                            Error.Report(value.ToString() + " in " + node.ToString() + " does not contain a value.");
                         }
                     }
                 }
 
             }
+        }
+
+        private void errorReport_TextChanged(object sender, EventArgs e)
+        {
+
         }
 
     }
