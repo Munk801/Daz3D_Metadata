@@ -20,7 +20,10 @@ namespace MetaData_Verifier
         public List<FileInfo> myFiles;
         public string[] paths;
         public XDocument mdFile;
-
+        public DirectoryInfo parentDir;
+        public List<string> fileNames;
+        public string mdPath;
+        
         public Form1()
         {
             InitializeComponent();
@@ -74,16 +77,16 @@ namespace MetaData_Verifier
                 XElement metadata = LoadMetaData(filePath);
                 // Add the product information to error report
                 errorReport.AppendLine("ERROR REPORT FOR: " + metadata.FirstAttribute.Value.ToString());
-                string filename = filePath.FullName;
+                mdPath = filePath.FullName;
 
                 // Get parent dir path.  We will need it later
                 // TO DO: CHECK ALL SUB PATHS FOR SUPPORT ASSETS****
-                DirectoryInfo getPD = new DirectoryInfo(Path.GetDirectoryName(filename));
-                string parentDirPath = GetParentDir(getPD);
-                DirectoryInfo parentDir = new DirectoryInfo(parentDirPath);
-                DirectoryInfo[] subdirs = parentDir.GetDirectories();
+                DirectoryInfo getPD = new DirectoryInfo(Path.GetDirectoryName(mdPath));
+                parentDir = new DirectoryInfo(GetParentDir(getPD));
+                fileNames = GenerateFileList();
+                
 
-                DirectoryInfo dir = new DirectoryInfo(Path.GetDirectoryName(filename));
+                DirectoryInfo dir = new DirectoryInfo(Path.GetDirectoryName(mdPath));
 
                 CheckManifestAndMetaData(dir, metadata, errorReport);
 
@@ -99,6 +102,9 @@ namespace MetaData_Verifier
                     errorReport.AppendLine(g.Message);
                 });
 
+                CheckSupportAssets(metadata, errorReport);
+
+
                 // Verify Information from the store
                 errorReport.AppendLine("\n STORE INFORMATION VERIFICATION: ");
                 StoreInfoVerifier(metadata, mdFile, filePath, errorReport);
@@ -112,6 +118,68 @@ namespace MetaData_Verifier
                 // Some way of indicating user of the results
                 MessageBox.Show(errorReport.ToString());
             }
+        }
+
+        private List<string> GenerateFileList()
+        {
+            //Stack for directory hierarchy
+            Stack<DirectoryInfo> directoryStack = new Stack<DirectoryInfo>();
+            List<FileInfo> fileList = new List<FileInfo>();
+            List<string> outPutList = new List<string>();
+
+            //Prime the stack
+            fileList.Add(parentDir.GetFiles());
+            directoryStack.Push(parentDir.GetDirectories());
+
+            //grab files
+            while (directoryStack.Count != 0)
+            {
+                DirectoryInfo dir = directoryStack.Pop();
+                if(dir.Name == ("Support")) continue;
+                fileList.Add(dir.GetFiles());
+                directoryStack.Push(dir.GetDirectories());
+            }
+
+            //generate output list
+            foreach (FileInfo file in fileList)
+            {
+                string s = file.FullName;
+                int parentCount = parentDir.FullName.Length;
+                s = s.Remove(0, parentCount);
+                s = s.ToLower().Replace("\\", "/");
+                outPutList.Add(s);
+            }
+
+            return outPutList;
+        }
+
+
+
+        private void CheckSupportAssets(XElement metadata, StringBuilder errorReport)
+        {
+            errorReport.AppendLine("CHECKING SUPPORT ASSETS:");
+            XElement supAssets = metadata.Element("SupportAssets");
+            List<XElement> allSupAssets = supAssets.Elements("SupportAsset").ToList<XElement>();
+            List<string> supportAssets = new List<string>();
+
+            // Checks all the support assets in the metadata against the directories
+            foreach (XElement sa in allSupAssets)
+            {
+                string s = sa.FirstAttribute.Value.ToLower();
+                if (!fileNames.Contains(s))
+                    errorReport.AppendLine(sa.FirstAttribute.Value + " is not found in the directory.");
+                else fileNames.Remove(s);
+
+            }
+
+            if(fileNames.Count != 0)
+                foreach (string name in fileNames)
+                {
+                    XElement thisAsset = new XElement("SupportAsset", new XAttribute("VALUE", name));
+                    supAssets.SetElementValue(thisAsset.Name, thisAsset.Value);
+                    metadata.Save(mdPath, SaveOptions.OmitDuplicateNamespaces);
+                    errorReport.AppendLine(thisAsset + " is missing from the metadata.");
+                }
         }
 
         static void CheckManifestAndMetaData(DirectoryInfo dir, XElement metadata, StringBuilder errorReport)
