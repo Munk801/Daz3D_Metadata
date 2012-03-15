@@ -128,6 +128,7 @@ namespace MetaData_Verifier
 
         private List<string> GenerateFileList()
         {
+            Error.Report("\n SUPPORT FILES CHECK:");
             //Stack for directory hierarchy
             Stack<DirectoryInfo> directoryStack = new Stack<DirectoryInfo>();
             List<FileInfo> fileList = new List<FileInfo>();
@@ -141,7 +142,24 @@ namespace MetaData_Verifier
             while (directoryStack.Count != 0)
             {
                 DirectoryInfo dir = directoryStack.Pop();
-                if(dir.Name == "Support" || dir.Name == "Uninstallers") continue;
+                if (dir.Name == "Support")
+                {
+                    FileInfo mdImage = new FileInfo(dir.FullName + "/" + Path.GetFileNameWithoutExtension(mdPath) + ".jpg");
+                    FileInfo dsaFile = new FileInfo(dir.FullName + "/" + Path.GetFileNameWithoutExtension(mdPath) + ".dsa");
+                    if (!mdImage.Exists)
+                    {
+                        Error.Report(mdImage.Name + " does not exists.  You must have this file with your metadata.");
+                    }
+                    if (!dsaFile.Exists)
+                    {
+                        Error.Report(dsaFile.Name + " does not exists.  You must have this file with your metadata.");
+                    }
+                    continue;
+                }
+                if (dir.Name == "Uninstallers")
+                {
+                    continue;
+                }
                 fileList.Add(dir.GetFiles());
                 directoryStack.Push(dir.GetDirectories());
             }
@@ -451,7 +469,7 @@ namespace MetaData_Verifier
 
             if (!descNames.Contains("ContentType")) Error.Report(asset.FirstAttribute.Value.ToString() + " is missing a ContentType");
             else if (!descNames.Contains("Audience")) Error.Report(asset.FirstAttribute.Value.ToString() + " is missing an Audience");
-            else if (!descNames.Contains("Categories")) Error.Report(asset.FirstAttribute.Value + "is missing Categories");
+            else if (!descNames.Contains("Categories")) Error.Report(asset.FirstAttribute.Value + " is missing Categories");
             else if (!descNames.Contains("Tags")) Error.Report(asset.FirstAttribute.Value.ToString() + " is missing Tags");
 
 
