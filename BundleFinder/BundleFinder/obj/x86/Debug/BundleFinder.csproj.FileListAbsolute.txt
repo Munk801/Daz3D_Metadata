@@ -1,0 +1,8 @@
+C:\Users\slu\Desktop\MetaData_Project\BundleFinder\BundleFinder\bin\Debug\BundleFinder.exe
+C:\Users\slu\Desktop\MetaData_Project\BundleFinder\BundleFinder\bin\Debug\BundleFinder.pdb
+C:\Users\slu\Desktop\MetaData_Project\BundleFinder\BundleFinder\bin\Debug\Ionic.Zip.dll
+C:\Users\slu\Desktop\MetaData_Project\BundleFinder\BundleFinder\bin\Debug\Ionic.Zip.pdb
+C:\Users\slu\Desktop\MetaData_Project\BundleFinder\BundleFinder\bin\Debug\Ionic.Zip.xml
+C:\Users\slu\Desktop\MetaData_Project\BundleFinder\BundleFinder\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\slu\Desktop\MetaData_Project\BundleFinder\BundleFinder\obj\x86\Debug\BundleFinder.exe
+C:\Users\slu\Desktop\MetaData_Project\BundleFinder\BundleFinder\obj\x86\Debug\BundleFinder.pdb

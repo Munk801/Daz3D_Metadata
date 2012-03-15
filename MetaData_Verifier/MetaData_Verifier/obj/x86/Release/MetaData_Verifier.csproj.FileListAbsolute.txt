@@ -1,0 +1,10 @@
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\bin\Release\ContentMetadata.xsd
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\bin\Release\MetaData_Verifier.exe
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\bin\Release\MetaData_Verifier.pdb
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Release\ResolveAssemblyReference.cache
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Release\MetaData_Verifier.Form1.resources
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Release\MetaData_Verifier.Properties.Resources.resources
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Release\GenerateResource.read.1.tlog
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Release\GenerateResource.write.1.tlog
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Release\MetaData_Verifier.exe
+C:\Users\slu\Desktop\MetaData_Project\MetaData_Verifier\MetaData_Verifier\obj\x86\Release\MetaData_Verifier.pdb
