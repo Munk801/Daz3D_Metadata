@@ -80,6 +80,7 @@
             this.MinimumSize = new System.Drawing.Size(720, 480);
             this.Name = "Form1";
             this.Text = "Metadata Verifier";
+            this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.DazImage)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

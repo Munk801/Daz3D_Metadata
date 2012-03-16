@@ -6,6 +6,13 @@ using Ionic.Zip;
 using System.IO;
 using System.Diagnostics;
 
+/*
+ * ================================================ Daz Bundle Finder ====================================================
+ * Queries through all the products and looks for products with similar information.  Because Bundles will always contain
+ * one or more products, the directory can be queried and return a list of products with simliar files in it.  A dictionary is
+ * created with the key as the file and the value as the product.  The dictionary can then be reduced to keys with more than one
+ * value.  This allows for easy matching of products.
+ * */
 namespace BundleFinder
 {
     class Program
@@ -15,6 +22,7 @@ namespace BundleFinder
         static uint UniqueFiles = 0;
         static uint SharedFiles = 0;
 
+        // Products will have these files in common, no need to include them
         static string[] ignoreGroup = 
         {
             "manifest.dsx",
@@ -22,7 +30,9 @@ namespace BundleFinder
             "content/readme",
         };
 
+        // Dictionary of product files as keys and products as values
         static Dictionary<string, List<string>> ProdDatabase = new Dictionary<string, List<string>>();
+        // This dictionary will be formated to give all the products as the key and the files as the value for output
         static Dictionary<string, List<string>> FormattedDupDict = new Dictionary<string, List<string>>();
         static StringBuilder Report = new StringBuilder();
 
@@ -104,6 +114,7 @@ namespace BundleFinder
             {
                 Report.AppendLine();
                 Report.AppendLine("========== Shared Files =========");
+                // Remove delimiter
                 string[] products = s.Split('|');
                 
                 foreach (string p in products)
@@ -118,7 +129,7 @@ namespace BundleFinder
 
 
 
-
+            // Write to file
             using (StreamWriter outfile = new StreamWriter(d.FullName + @"\DuplicateFiles.txt"))
             {
                 outfile.Write(Report.ToString());
@@ -134,6 +145,7 @@ namespace BundleFinder
            
             List<string> entryList = new List<string>();
             ZipFile testZip = null;
+            // We may not always be able to access the zips
             try
             {
                 testZip = new ZipFile(filePath);
@@ -148,8 +160,11 @@ namespace BundleFinder
 
             TotalFiles += (uint)testZip.EntryFileNames.Count;
 
+            // Avoid case and directories and add files to lsit
             entryList = (testZip.EntryFileNames.Where(entry => entry.Contains(".")).Select(name => name.ToLower())).ToList<string>();
 
+
+            // If any of the above files are found, remove from our entry. 
             for (int i = entryList.Count -1; i >=0; --i)
             {
                 for(int j = 0; j < ignoreGroup.Length ; ++j)
