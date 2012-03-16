@@ -1,4 +1,12 @@
-﻿using System;
+﻿/*=================================================== META DATA VALIDATOR ===============================================
+ * This windows form will allow the user to validate all the meta data that is created to ensure consistency and to
+ * remove as much sign of human error.  When a file is dragged into the form, it will ensure that the meta data is of 
+ * correct structure by checking against the schema.  It will also validate all the values of the product are present and
+ * ensure that items are not missing from certain files.  This will also check directory structure to ensure all the files
+ * are accounted for in the product.  All these checks will give constistency and stability when creating meta data. 
+ * 
+ * */
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -505,6 +513,11 @@ namespace MetaData_Verifier
         }
 
         private void errorReport_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
         {
 
         }
