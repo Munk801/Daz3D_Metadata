@@ -6,22 +6,127 @@ using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Text.RegularExpressions;
-
+using ProductInfo = System.Tuple<int, string>;
+using Product = System.Tuple;
 namespace QueryDataList
 {
     class Program
     {
+        
         static Dictionary<int, List<string>> DataList = new Dictionary<int,List<string>>();
         static Dictionary<string, List<int>> dependencyCollection = new Dictionary<string, List<int>>();
+        
+        /// <summary>
+        /// Dictionary containing all our Bundles 
+        /// </summary>
+        static Dictionary<ProductInfo, List<ProductInfo>> FinalBundleList = new Dictionary<ProductInfo, List<ProductInfo>>();
+
+        // List of all the products that share IDX.
+        static List<Tuple<int, string>> SharedIDXProducts = new List<Tuple<int, string>>();
 
         static void Main(string[] args)
         {
-            GenerateMasterList();
-            Console.WriteLine("Finding Bundles");
-            FindBundles();
-            Console.WriteLine("Found Bundles");
+            //GenerateMasterList();
+            //Console.WriteLine("Finding Bundles");
+            //FindBundles();
+            //Console.WriteLine("Found Bundles");
+            string path = "test.csv";
 
+            GenerateMasterBundleList(path);
             Console.ReadLine();
+        }
+
+        /// <summary>
+        /// Given a CSV File containing items in the order [ROLE],[IDX],[PRODUCTNAME]
+        /// This method will take in the csv file and process through in order to generate a final dictionary value
+        /// </summary>
+        /// <param name="path">Path to CSV</param>
+        private static void GenerateMasterBundleList(string path)
+        {
+            // List of the csvData.  Gets cleared after finding a ",,"
+            List<string[]> csvData = new List<string[]>();
+            try
+            {
+                using (StreamReader readFile = new StreamReader(path))
+                {
+                    string line;
+                    string[] row;
+                    // Go until we reach end of line
+                    while ((line = readFile.ReadLine()) != null)
+                    {
+                        if (line != ",,")
+                        {
+                            // Add these items to our csvdata
+                            row = line.Split(',');
+                            csvData.Add(row);
+                        }
+                        else
+                        {
+                            Console.WriteLine("End of File Dependency");
+                            // This is our dictionary of all the items that share files
+                            Dictionary<ProductInfo, List<ProductInfo>> miniProduct = new Dictionary<ProductInfo, List<ProductInfo>>();
+
+                            foreach (string[] product in csvData)
+                            {
+                                string role = product[0];
+                                if (role == "Bundle")
+                                {
+                                    // We found a bundle, so go through every other product in the lsit and find dependencies
+                                    ProductInfo itsABundle = Product.Create(Int32.Parse(product[1]), product[2]);
+                                    miniProduct.Add(itsABundle, new List<ProductInfo>());
+                                    //Search through list for all dependencies
+                                    foreach (string[] otherProd in csvData)
+                                    {
+                                        if (product == otherProd) continue;
+                                        else if (otherProd[0] == "Unique")
+                                        {
+                                            Tuple<int, string> partOfBundle = Tuple.Create(Int32.Parse(otherProd[1]), otherProd[2]);
+                                            miniProduct[itsABundle].Add(partOfBundle);
+                                        }
+
+                                    }
+                                }
+                                // TO DO: COMPOUND ITEMS
+                                else if (role == "Compound")
+                                {
+                                    //Search through list of all dependencies
+                                }
+
+                                // Put all the sharedIDX items in a list
+                                else if (role == "Shared IDX")
+                                {
+                                    Tuple<int, string> sharedIDX = Tuple.Create(Int32.Parse(product[1]), product[2]);
+                                    if(!SharedIDXProducts.Contains(sharedIDX))
+                                    {
+                                        SharedIDXProducts.Add(sharedIDX);
+                                    }
+                                }
+                            }
+
+                            // We have finished sorting through everything with a file dependency, add them back to our MASTER dictionary
+                            foreach (var key in miniProduct.Keys)
+                            {
+                                if (FinalBundleList.Keys.Contains(key))
+                                {
+                                    FinalBundleList[key].Union(miniProduct[key]);
+                                }
+                                else
+                                {
+                                    FinalBundleList.Add(key, miniProduct[key]);
+                                }
+                            }
+                            // May not need to clear the dictionary but why not be safe
+                            miniProduct.Clear();
+                            csvData.Clear();
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
         }
 
         private static void FindBundles()

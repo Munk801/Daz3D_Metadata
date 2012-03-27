@@ -1,3 +1,4 @@
+C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\bin\Debug\daz_storephront-3-16-12-target.csv
 C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\bin\Debug\QueryDataList.exe
 C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\bin\Debug\QueryDataList.pdb
 C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\bin\Debug\FileHelpers.dll
@@ -7,4 +8,4 @@ C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\bin\Debug\File
 C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\obj\x86\Debug\ResolveAssemblyReference.cache
 C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\obj\x86\Debug\QueryDataList.exe
 C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\obj\x86\Debug\QueryDataList.pdb
-C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\bin\Debug\daz_storephront-3-16-12-target.csv
+C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\bin\Debug\test.csv
