@@ -175,7 +175,9 @@ namespace QueryDataList
 
                                 if (FinalBundleList.Keys.Contains(key))
                                 {
-                                    FinalBundleList[key].Union(miniProduct[key]);
+                                    List<ProductInfo> newList = FinalBundleList[key].Union(miniProduct[key]).ToList();
+                                    FinalBundleList[key] = newList;
+                                    
                                 }
                                 else
                                 {
