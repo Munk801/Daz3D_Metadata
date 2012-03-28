@@ -20,7 +20,7 @@ namespace QueryDataList
         /// Dictionary containing all our Bundles 
         /// </summary>
         static Dictionary<ProductInfo, List<ProductInfo>> FinalBundleList = new Dictionary<ProductInfo, List<ProductInfo>>();
-
+        static StringBuilder possibleErr = new StringBuilder();
         // List of all the products that share IDX.
         static List<ProductInfo> SharedIDXProducts = new List<ProductInfo>();
 
@@ -33,7 +33,31 @@ namespace QueryDataList
             string path = "test.csv";
 
             GenerateMasterBundleList(path);
+
+
+            StreamWriter w = new StreamWriter("PossibleErrors.txt");
+            w.Write(possibleErr.ToString());
+
+            StreamWriter FBL = new StreamWriter("FinalBundleListTest.csv");
+            StringBuilder finalOut = WriteBundleList();
+            FBL.Write(finalOut.ToString());
+
             Console.ReadLine();
+        }
+
+        private static StringBuilder WriteBundleList()
+        {
+            StringBuilder output = new StringBuilder();
+            foreach (var key in FinalBundleList.Keys)
+            {
+                output.AppendLine(key.Item1 + "," + key.Item2 + "," + FinalBundleList[key][0].Item1 + "," + FinalBundleList[key][0].Item2);
+                for (int i = 1; i < FinalBundleList[key].Count; i++)
+                {
+                    output.AppendLine(",," + FinalBundleList[key][i].Item1 + "," + FinalBundleList[key][i].Item2);
+                }
+            }
+
+            return output;
         }
 
         /// <summary>
@@ -45,6 +69,7 @@ namespace QueryDataList
         {
             // List of the csvData.  Gets cleared after finding a ",,"
             List<string[]> csvData = new List<string[]>();
+            int lineNum = 0;
             try
             {
                 using (StreamReader readFile = new StreamReader(path))
@@ -54,13 +79,21 @@ namespace QueryDataList
                     // Go until we reach end of line
                     while ((line = readFile.ReadLine()) != null)
                     {
+                        // Keep track of what line to check IN CASE
+                        lineNum++;
                         if (line != ",,")
                         {
                             // Add these items to our csvdata
                             row = line.Split(',');
                             // TO DO: ENSURE THAT EVERY LINE CONTAINS 3 ELEMENTS
-
-                            csvData.Add(row);
+                            if (row.Length != 3)
+                            {
+                                possibleErr.AppendLine("Line " + lineNum + " is missing a value. Fix this!");
+                            }
+                            else
+                            {
+                                csvData.Add(row);
+                            }
                         }
                         else
                         {
@@ -91,6 +124,8 @@ namespace QueryDataList
                                         else if (otherProd[0] == "Compound")
                                         {
                                             // COMPOUNDS ARE A PART OF A BUNDLE
+                                            ProductInfo partOfBundle = Product.Create(Int32.Parse(otherProd[1]), otherProd[2]);
+                                            miniProduct[itsABundle].Add(partOfBundle);
                                         }
 
                                     }
@@ -99,6 +134,19 @@ namespace QueryDataList
                                 else if (role == "Compound")
                                 {
                                     //Search through list of all dependencies
+                                    // We found a bundle, so go through every other product in the lsit and find dependencies
+                                    ProductInfo itsACompound = Product.Create(Int32.Parse(product[1]), product[2]);
+                                    miniProduct.Add(itsACompound, new List<ProductInfo>());
+                                    //Search through list for all dependencies
+                                    foreach (string[] otherProd in csvData)
+                                    {
+                                        if (product == otherProd) continue;
+                                        else if (otherProd[0] == "Unique")
+                                        {
+                                            ProductInfo partOfBundle = Product.Create(Int32.Parse(otherProd[1]), otherProd[2]);
+                                            miniProduct[itsACompound].Add(partOfBundle);
+                                        }
+                                    }
                                 }
 
                                 // Put all the sharedIDX items in a list
@@ -117,12 +165,14 @@ namespace QueryDataList
                                 else
                                 {
                                     // CAN CAPTURE MISSPELLINGS AND SUCH
+                                    possibleErr.AppendLine("Line " + lineNum + " has an unidentified role: " + role);
                                 }
                             }
 
                             // We have finished sorting through everything with a file dependency, add them back to our MASTER dictionary
                             foreach (var key in miniProduct.Keys)
                             {
+
                                 if (FinalBundleList.Keys.Contains(key))
                                 {
                                     FinalBundleList[key].Union(miniProduct[key]);
@@ -143,7 +193,20 @@ namespace QueryDataList
             {
                 Console.WriteLine(e.Message);
             }
+            List<ProductInfo> keysWith0Val = new List<ProductInfo>();
+            // REMOVE DUPLICATES VALUES FROM DICTIONARY
+            foreach (ProductInfo checks in FinalBundleList.Keys)
+            {
+                if (FinalBundleList[checks].Count == 0)
+                {
+                    keysWith0Val.Add(checks);
+                }
 
+            }
+            foreach (ProductInfo toRemove in keysWith0Val)
+            {
+                FinalBundleList.Remove(toRemove);
+            }
         }
 
         private static void FindBundles()
