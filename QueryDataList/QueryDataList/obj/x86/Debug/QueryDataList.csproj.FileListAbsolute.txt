@@ -9,3 +9,14 @@ C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\obj\x86\Debug\
 C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\obj\x86\Debug\QueryDataList.exe
 C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\obj\x86\Debug\QueryDataList.pdb
 C:\Users\slu\Desktop\MetaData_Project\QueryDataList\QueryDataList\bin\Debug\test.csv
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\bin\Debug\daz_storephront-3-16-12-target.csv
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\bin\Debug\test.csv
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\bin\Debug\QueryDataList.exe
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\bin\Debug\QueryDataList.pdb
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\bin\Debug\FileHelpers.dll
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\bin\Debug\FileHelpers.ExcelStorage.dll
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\bin\Debug\FileHelpers.xml
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\bin\Debug\FileHelpers.ExcelStorage.xml
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\obj\x86\Debug\QueryDataList.exe
+C:\Users\Munk\Desktop\Daz_Metadata_Project\metadata\QueryDataList\QueryDataList\obj\x86\Debug\QueryDataList.pdb

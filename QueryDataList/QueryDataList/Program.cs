@@ -22,7 +22,7 @@ namespace QueryDataList
         static Dictionary<ProductInfo, List<ProductInfo>> FinalBundleList = new Dictionary<ProductInfo, List<ProductInfo>>();
 
         // List of all the products that share IDX.
-        static List<Tuple<int, string>> SharedIDXProducts = new List<Tuple<int, string>>();
+        static List<ProductInfo> SharedIDXProducts = new List<ProductInfo>();
 
         static void Main(string[] args)
         {
@@ -58,11 +58,16 @@ namespace QueryDataList
                         {
                             // Add these items to our csvdata
                             row = line.Split(',');
+                            // TO DO: ENSURE THAT EVERY LINE CONTAINS 3 ELEMENTS
+
                             csvData.Add(row);
                         }
                         else
                         {
                             Console.WriteLine("End of File Dependency");
+                            // Check if all products are labeled Bundle
+
+
                             // This is our dictionary of all the items that share files
                             Dictionary<ProductInfo, List<ProductInfo>> miniProduct = new Dictionary<ProductInfo, List<ProductInfo>>();
 
@@ -80,8 +85,12 @@ namespace QueryDataList
                                         if (product == otherProd) continue;
                                         else if (otherProd[0] == "Unique")
                                         {
-                                            Tuple<int, string> partOfBundle = Tuple.Create(Int32.Parse(otherProd[1]), otherProd[2]);
+                                            ProductInfo partOfBundle = Product.Create(Int32.Parse(otherProd[1]), otherProd[2]);
                                             miniProduct[itsABundle].Add(partOfBundle);
+                                        }
+                                        else if (otherProd[0] == "Compound")
+                                        {
+                                            // COMPOUNDS ARE A PART OF A BUNDLE
                                         }
 
                                     }
@@ -95,11 +104,19 @@ namespace QueryDataList
                                 // Put all the sharedIDX items in a list
                                 else if (role == "Shared IDX")
                                 {
-                                    Tuple<int, string> sharedIDX = Tuple.Create(Int32.Parse(product[1]), product[2]);
-                                    if(!SharedIDXProducts.Contains(sharedIDX))
+                                    ProductInfo sharedIDX = Product.Create(Int32.Parse(product[1]), product[2]);
+                                    if (!SharedIDXProducts.Contains(sharedIDX))
                                     {
                                         SharedIDXProducts.Add(sharedIDX);
                                     }
+                                }
+                                else if (role == "Unique")
+                                {
+                                    // DONT REALLY  NEED TO DO ANYTHING BUT THESE ARE ALL THE CASES
+                                }
+                                else
+                                {
+                                    // CAN CAPTURE MISSPELLINGS AND SUCH
                                 }
                             }
 
